@@ -20,6 +20,7 @@ public:
 
 	SphereScene(SceneController* sceneController): Scene(sceneController) {}
 
+	virtual void Animate(double dt) override;
 	void initializeCloth(int index, physx::PxVec3 offset);
 	virtual void onInitialize() override;
 
@@ -27,6 +28,9 @@ private:
 	nv::cloth::Fabric* mFabric[1];
 	nv::cloth::Solver* mSolver;
 	ClothActor* mClothActor[1];
+
+	physx::PxVec3 mOffset;
+	Renderable* sphere;
 };
 
 

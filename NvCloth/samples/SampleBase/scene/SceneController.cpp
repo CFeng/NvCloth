@@ -50,7 +50,7 @@ JobManager SceneController::sJobManager;
 
 SceneController::SceneController() : mTimeScale(1.0f), mStartDelay(0.f)
 {
-	mActivePlatform = (int)nv::cloth::Platform::CPU;
+	mActivePlatform = (int)nv::cloth::Platform::CUDA;
 	mCUDAInitialized = false;
 	mDXInitialized = false;
 	mLeftOverTime = 0.0;
@@ -100,7 +100,8 @@ void SceneController::onSampleStart()
 
 	mActiveScene = new SimpleScene(this);
 	mActiveScene->onInitialize();
-	mActiveSceneIndex = 0;
+	mActiveSceneIndex = 5;
+    changeScene(mActiveSceneIndex);
 }
 
 void SceneController::onInitialize()

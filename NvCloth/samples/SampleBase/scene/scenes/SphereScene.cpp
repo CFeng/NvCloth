@@ -23,12 +23,30 @@
 DECLARE_SCENE_NAME(SphereScene, "Sphere Scene")
 
 
+void SphereScene::Animate(double dt)
+{
+	static float time = 0.0f;
+	time += dt;
+
+	physx::PxTransform totalTransform(physx::PxVec3(0.0f,0.0f,10.0f*sinf(time)));
+
+    physx::PxVec4 spheres[1] = { physx::PxVec4(totalTransform.transform(physx::PxVec3(0.f, 10.f, -1.f) + mOffset), 1.5) };
+
+	mClothActor[0]->mCloth->setSpheres(nv::cloth::Range<physx::PxVec4>(spheres, spheres + 1), nv::cloth::Range<physx::PxVec4>(spheres, spheres + 1));
+
+    sphere->setTransform(PxTransform(totalTransform.transform(physx::PxVec3(0.f, 10.f, -1.f) + mOffset), PxQuat(PxPiDivTwo, PxVec3(0.f, 0.f, 1.f))));
+
+	Scene::Animate(dt);
+}
+
 void SphereScene::initializeCloth(int index, physx::PxVec3 offset)
 {
+	mOffset = offset;
+
 	///////////////////////////////////////////////////////////////////////
 	ClothMeshData clothMesh;
 
-	physx::PxMat44 transform = PxTransform(PxVec3(0.f, 13.f, 0.f)+ offset, PxQuat(0, PxVec3(1.f, 0.f, 0.f)));
+	physx::PxMat44 transform = PxTransform(PxVec3(0.f, 13.f, 0.f)+ mOffset, PxQuat(0, PxVec3(1.f, 0.f, 0.f)));
 	clothMesh.GeneratePlaneCloth(5.f, 6.f, 69, 79, false, transform);
 	clothMesh.AttachClothPlaneByAngles(69, 79);
 	clothMesh.SetInvMasses(0.5f + (float)index * 2.0f);
@@ -76,13 +94,13 @@ void SphereScene::initializeCloth(int index, physx::PxVec3 offset)
 	
 	{
 		IRenderMesh* mesh = getSceneController()->getRenderer().getPrimitiveRenderMesh(PrimitiveRenderMeshType::Sphere);
-		Renderable* sphere = getSceneController()->getRenderer().createRenderable(*mesh, *getSceneController()->getDefaultMaterial());
-		sphere->setTransform(PxTransform(PxVec3(0.f, 10.f, -1.f) + offset, PxQuat(PxPiDivTwo, PxVec3(0.f, 0.f, 1.f))));
+		sphere = getSceneController()->getRenderer().createRenderable(*mesh, *getSceneController()->getDefaultMaterial());
+		sphere->setTransform(PxTransform(PxVec3(0.f, 10.f, -1.f) + mOffset, PxQuat(PxPiDivTwo, PxVec3(0.f, 0.f, 1.f))));
 		sphere->setScale(PxVec3(1.5f));
 		trackRenderable(sphere);
 	}
 
-	physx::PxVec4 spheres[1] = {physx::PxVec4(physx::PxVec3(0.f, 10.f, -1.f) + offset,1.5)};
+	physx::PxVec4 spheres[1] = {physx::PxVec4(physx::PxVec3(0.f, 10.f, -1.f) + mOffset,1.5)};
 
 	//mClothActor[index]->mCloth->setSpheres(nv::cloth::Range<physx::PxVec4>(spheres, spheres + 1), 0, mClothActor[index]->mCloth->getNumSpheres());
 	mClothActor[index]->mCloth->setSpheres(nv::cloth::Range<physx::PxVec4>(spheres, spheres + 1), nv::cloth::Range<physx::PxVec4>(spheres, spheres + 1));
