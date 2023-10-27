@@ -130,11 +130,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	freopen_s(&fp, "CONOUT$", "w", stdout);
 #endif
 
+#if 0
+    SampleConfig config;
+	config.sampleName = L"NvCloth Samples Viewer";
+	//config.additionalResourcesDir.push_back(alternatePathArg.getValue().c_str());
+
+	int result = runSample(config);
+
+	return result;
+#else
 	nv::cloth::Fabric* mFabric[1];
 	nv::cloth::Solver* mSolver;
 	//ClothActor* mClothActor[1];
 
-	physx::PxVec3 mOffset;
 	//Renderable* sphere;
 
     //////////////////////////
@@ -160,8 +168,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	//trackSolver(mSolver);
 
     //initializeCloth(0, physx::PxVec3(0.0f, 0.0f, 0.0f));
-    physx::PxVec3 offset = physx::PxVec3(0.0f, 0.0f, 0.0f);
-    mOffset = offset;
 
 	///////////////////////////////////////////////////////////////////////
 	//ClothMeshData clothMesh;
@@ -169,10 +175,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	std::vector<Triangle>		mTriangles;
 	std::vector<physx::PxReal>	mInvMasses;
 
-	int segmentsX = 69, segmentsY = 79;
+	int segmentsX = 9, segmentsY = 9;
 
-	physx::PxMat44 transform = physx::PxTransform(physx::PxVec3(0.f, 13.f, 0.f)+ mOffset, physx::PxQuat(0, physx::PxVec3(1.f, 0.f, 0.f)));
-	GeneratePlaneCloth(5.f, 6.f, segmentsX, segmentsY, transform, mVertices, mTriangles, mInvMasses);
+	physx::PxMat44 transform = physx::PxTransform(physx::PxVec3(0.f, 13.f, 0.f), physx::PxQuat(0, physx::PxVec3(1.f, 0.f, 0.f)));
+	GeneratePlaneCloth(6.f, 6.f, segmentsX, segmentsY, transform, mVertices, mTriangles, mInvMasses);
 
 	//clothMesh.AttachClothPlaneByAngles(69, 79);
 	for (int y = 0; y < segmentsY + 1; y++)
@@ -230,7 +236,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	mCloth->setGravity(physx::PxVec3(0.0f, -9.8f, 0.0f));
 	mCloth->setDamping(physx::PxVec3(0.1f, 0.1f, 0.1f));
 
-	physx::PxVec4 spheres[1] = {physx::PxVec4(physx::PxVec3(0.f, 10.f, -1.f) + mOffset,1.5)};
+    physx::PxVec4 spheres[1] = { physx::PxVec4(physx::PxVec3(0.f, 10.f, -1.f), 1.0) };
 
 	//mClothActor[0]->mCloth->setSpheres(nv::cloth::Range<physx::PxVec4>(spheres, spheres + 1), 0, mClothActor[0]->mCloth->getNumSpheres());
 	mCloth->setSpheres(nv::cloth::Range<physx::PxVec4>(spheres, spheres + 1), nv::cloth::Range<physx::PxVec4>(spheres, spheres + 1));
@@ -256,6 +262,43 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	//assert(mClothSolverMap.find(clothActor) == mClothSolverMap.end());
 	//mClothSolverMap[clothActor] = solver;
 
+#ifdef WRITE_BIN
+	FILE* f = fopen("frames.bin", "wb");
+#else
+	FILE* f = fopen("frames.txt", "wt");
+#endif // WRITE_BIN
+
+    const float deltaTime = 1.0f / 60.0f;
+	static float time = 0.0f;
+	while (time < 1.0f)
+	{
+        time += deltaTime;
+
+        physx::PxTransform totalTransform(physx::PxVec3(0.0f, 0.0f, 10.0f * sinf(time)));
+        physx::PxVec4 spheres[1] = { physx::PxVec4(totalTransform.transform(physx::PxVec3(0.f, 10.f, -1.f)), 1.0) };
+        mCloth->setSpheres(nv::cloth::Range<physx::PxVec4>(spheres, spheres + 1), nv::cloth::Range<physx::PxVec4>(spheres, spheres + 1));
+
+        mSolver->beginSimulation(deltaTime);
+        for (int i = 0; i < mSolver->getSimulationChunkCount(); i++)
+        {
+            mSolver->simulateChunk(i);
+		}
+        mSolver->endSimulation();
+
+        nv::cloth::MappedRange<physx::PxVec4> particles = mCloth->getCurrentParticles();
+        for (uint32_t i = 0; i < particles.size(); i++)
+        {
+			auto& p = particles[i];
+#ifdef WRITE_BIN
+			fwrite(&p.getXYZ(), sizeof(physx::PxVec3), 1, f);
+#else
+			fprintf(f, "%f, %f, %f\n", p.x, p.y, p.z);
+#endif // WRITE_BIN
+        }
+    }
+
+    fclose(f);
 
 	return 0;
+#endif
 }
